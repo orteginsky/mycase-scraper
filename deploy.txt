@@ -1,0 +1,37 @@
+MYCASE_EMAIL=jmillan@mendozafirm.com
+MYCASE_PASSWORD=TghJCe9MPXv2$tU
+
+PW_HEADLESS=true
+PW_TIMEOUT_MS=30000
+PW_BLOCK_RESOURCES=image,media,font,stylesheet
+
+# Usa Playwright Chromium (no definas PW_BROWSER_CHANNEL)
+
+# Rutas Linux
+PW_USER_DATA_DIR=/app/playwright_profile
+DOWNLOAD_DIR=/tmp/downloads
+
+# Google
+SHEET_DEFAULT_ID=1Dyq4QJgwKcW3LEAetga43CkAdvzBZDtW7vLddPugVfo
+SHEET_DEFAULT_NAME=local
+GCS_ARTIFACTS_BUCKET=mycase-artifacts-tu-project
+GCS_SIGNED_URL_TTL=604800
+
+# Perfil persistente en GCS (opcional pero recomendado)
+PW_PROFILE_GCS_BUCKET=mycase-sessions-<project>
+PW_PROFILE_GCS_PREFIX=playwright-profiles/mycase/
+
+
+
+gcloud builds submit --tag gcr.io/ortega-473114/mycase-scraper-api
+
+gcloud run deploy mycase-scraper-api --image gcr.io/ortega-473114/mycase-scraper-api --region us-central1 --platform managed --allow-unauthenticated --port 8080 --memory 2Gi --cpu 2 --min-instances 0 --max-instances 3 --concurrency 1 --timeout 900 --service-account mycase-scraper-sa@ortega-473114.iam.gserviceaccount.com --set-env-vars "PW_HEADLESS=true,PW_USER_DATA_DIR=/app/playwright_profile,DOWNLOAD_DIR=/tmp/downloads,PW_PROFILE_GCS_BUCKET=mycase-sessions-ortega-473114,PW_PROFILE_GCS_PREFIX=playwright-profiles/mycase/,GCS_ARTIFACTS_BUCKET=mycase-artifacts-tu-project,SHEET_DEFAULT_ID=1Dyq4QJgwKcW3LEAetga43CkAdvzBZDtW7vLddPugVfo,SHEET_DEFAULT_NAME=local,MYCASE_EMAIL=jmillan@mendozafirm.com,MYCASE_PASSWORD=TghJCe9MPXv2$tU"
+
+gcloud run services update mycase-scraper-api --region us-central1 --update-env-vars=PW_BROWSER_CHANNEL=
+
+
+gcloud run services update mycase-scraper-api --region us-central1  --update-env-vars=PW_BROWSER_CHANNEL=
+
+gcloud builds submit --tag gcr.io/ortega-473114/mycase-scraper-api
+gcloud builds submit --tag gcr.io/ortega-473114/mycase-scraper-api
+gcloud run deploy mycase-scraper-api --image gcr.io/ortega-473114/mycase-scraper-api --region us-central1 --platform managed

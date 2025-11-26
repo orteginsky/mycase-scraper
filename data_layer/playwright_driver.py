@@ -21,7 +21,7 @@ USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 HEADLESS = os.getenv("PW_HEADLESS", "true").lower() == "true"   # Cambia a False si quieres ver el navegador
 DEFAULT_TIMEOUT = int(os.getenv("PW_TIMEOUT_MS", 8000))         # 8 segundos
 BLOCK_RESOURCES = ["image", "media", "font", "stylesheet"]      # tipos de recursos que no cargamos
-CHROME_CHANNEL = "chrome"
+BROWSER_CHANNEL = os.getenv("PW_BROWSER_CHANNEL", "").strip()   # Empty = default chromium
 
 def create_playwright_context(persistent: bool = True):
     """
@@ -38,11 +38,11 @@ def create_playwright_context(persistent: bool = True):
         user_data_dir.mkdir(parents=True, exist_ok=True)
 
         if persistent:
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=str(user_data_dir),
-                headless=PW_HEADLESS,
-                channel="chrome",
-                args=[
+            # Build launch kwargs
+            launch_kwargs = {
+                "user_data_dir": str(user_data_dir),
+                "headless": PW_HEADLESS,
+                "args": [
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
@@ -50,8 +50,15 @@ def create_playwright_context(persistent: bool = True):
                     "--disable-blink-features=AutomationControlled",
                     "--start-maximized",
                 ],
-            )
-            logger.info("🧠 Contexto persistente creado en %s", user_data_dir)
+            }
+
+            # Only pass channel if not empty (Cloud Run uses default chromium)
+            if BROWSER_CHANNEL:
+                launch_kwargs["channel"] = BROWSER_CHANNEL
+
+            context = p.chromium.launch_persistent_context(**launch_kwargs)
+            logger.info("🧠 Contexto persistente creado en %s | channel=%s",
+                       user_data_dir, BROWSER_CHANNEL or "<default chromium>")
         else:
             browser = p.chromium.launch(
                 headless=PW_HEADLESS,

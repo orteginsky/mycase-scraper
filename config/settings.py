@@ -42,3 +42,23 @@ PW_BLOCK_RESOURCES = os.getenv(
     "PW_BLOCK_RESOURCES",
     "image,media,font,stylesheet"
 ).split(",")
+
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")  # ruta a .json
+SA_JSON = os.getenv("SA_JSON")  # opcional, contenido JSON inline
+
+# Spreadsheet/hoja por defecto (para pruebas)
+SHEET_DEFAULT_ID = os.getenv("SHEET_DEFAULT_ID", "1Dyq4QJgwKcW3LEAetga43CkAdvzBZDtW7vLddPugVfo")
+SHEET_DEFAULT_NAME = os.getenv("SHEET_DEFAULT_NAME", "local")
+# === GOOGLE DRIVE (subidas de PDFs) ===
+DRIVE_DEFAULT_FOLDER_ID = os.getenv("DRIVE_DEFAULT_FOLDER_ID", "").strip()
+DRIVE_USE_SHARED_DRIVE = os.getenv("DRIVE_USE_SHARED_DRIVE", "true").lower() == "true"
+
+# (opcional) modo de escritura
+SHEETS_VALUE_INPUT_OPTION = os.getenv("SHEETS_VALUE_INPUT_OPTION", "USER_ENTERED")  # RAW o USER_ENTERED
+# === GCS (Cloud Storage) ===
+GCS_ARTIFACTS_BUCKET = os.getenv("GCS_ARTIFACTS_BUCKET", "").strip()
+GCS_SIGNED_URL_TTL = int(os.getenv("GCS_SIGNED_URL_TTL", "604800"))  # 7 días
+
+
+if __name__=="__main__":
+    print(GOOGLE_APPLICATION_CREDENTIALS)

@@ -1,26 +1,59 @@
 # ============================================
-# ⚙️ Core Python Tools
+# Core Python Tools
 # ============================================
 python-dotenv==1.0.1
-requests==2.32.3
-pathlib==1.0.1
 
 # ============================================
-# 🧠 Data Processing
+# Web Framework (FastAPI)
 # ============================================
-polars==1.6.0
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.2
 
 # ============================================
-# 🤖 Playwright (automatización de navegador)
+# Browser Automation (Playwright)
 # ============================================
 playwright==1.48.0
 
 # ============================================
-# 🧩 Otros utilitarios
+# Google Cloud APIs
 # ============================================
-tqdm==4.66.4
-tenacity==9.0.0        # reintentos automáticos robustos
-loguru==0.7.2          # logging elegante (opcional)
-aiofiles==23.2.1       # manejo async de archivos (si FastAPI lo usa)
+google-api-python-client>=2.147
+google-auth>=2.41
+google-auth-httplib2>=0.2
+google-auth-oauthlib>=1.2
+google-cloud-storage>=2.18
+httplib2>=0.22
 
-python-dotenv==1.0.1
+# Optional: Vertex AI (for AI features)
+# google-cloud-aiplatform>=1.70
+
+# ============================================
+# Data Processing
+# ============================================
+polars==1.6.0
+
+# ============================================
+# Utilities
+# ============================================
+tenacity>=9.0.0           # Automatic retries
+aiofiles>=23.2.1          # Async file handling (for FastAPI)
+
+# PDF Processing (optional)
+# PyPDF2
+# markdown-it-py>=3.0.0
+
+# ============================================
+# Testing
+# ============================================
+pytest>=7.0
+pytest-asyncio>=0.21
+httpx>=0.25               # For TestClient
+
+# ============================================
+# Development
+# ============================================
+# black>=23.0
+# ruff>=0.1
+# mypy>=1.0

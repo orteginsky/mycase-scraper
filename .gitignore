@@ -8,3 +8,7 @@ credenciales.txt
 intento_playwright.txt
 prompts.txt
 urls_casos.txt
+*.csv
+sa_key.json
+profile.tar.gz
+NUL
