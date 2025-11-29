@@ -2385,3 +2385,76 @@ Call log:
 [2025-11-26 15:09:54] [INFO] __main__: ✓ Backup eliminado
 [2025-11-26 15:09:54] [INFO] __main__: ✅ Perfil local restaurado
 [2025-11-26 15:09:54] [INFO] __main__: 
+[2025-11-27 09:04:21] [INFO] api.app: Starting MyCase Scraper API
+[2025-11-27 09:04:21] [INFO] api.app: Download directory: C:\MyCaseDownloads
+[2025-11-27 09:04:21] [INFO] api.app: Playwright profile: C:\ChromeProfiles\mycase_pw
+[2025-11-27 09:04:21] [INFO] api.app: Headless mode: True
+[2025-11-27 09:04:21] [INFO] api.app: ============================================================
+[2025-11-27 09:04:21] [INFO] api.app: Profile Sync Configuration:
+[2025-11-27 09:04:21] [INFO] api.app:   GCS Bucket: mycase-sessions-ortega-473114
+[2025-11-27 09:04:21] [INFO] api.app:   GCS Prefix: playwright-profiles/mycase/
+[2025-11-27 09:04:21] [INFO] api.app:   Local Profile Dir: C:\ChromeProfiles\mycase_pw
+[2025-11-27 09:04:21] [INFO] api.app: ============================================================
+[2025-11-27 09:04:21] [INFO] api.app: Attempting to sync Playwright profile from GCS...
+[2025-11-27 09:04:21] [DEBUG] core.profile_sync: Profile already exists locally
+[2025-11-27 09:04:21] [INFO] api.app: ✅ Playwright profile synced from GCS successfully
+[2025-11-27 09:04:21] [INFO] api.app: Profile contains 651 files/directories
+[2025-11-27 09:04:21] [INFO] api.app:   Cookies file exists: True
+[2025-11-27 09:04:21] [INFO] api.app:   Local Storage exists: True
+[2025-11-27 09:08:17] [INFO] core.context_manager: Launching Playwright persistent context | logic_headless=True | channel=chrome
+[2025-11-27 09:08:18] [INFO] core.context_manager: Persistent context created at C:\ChromeProfiles\mycase_pw
+[2025-11-27 09:08:18] [INFO] core.context_manager: Opening MyCase Dashboard...
+[2025-11-27 09:08:20] [INFO] core.context_manager: No active session detected, attempting login...
+[2025-11-27 09:08:20] [INFO] core.context_manager: Filling credentials...
+[2025-11-27 09:08:24] [INFO] core.context_manager: Login successful (Dashboard text detected)
+[2025-11-27 09:08:24] [INFO] api.endpoints.messages: Sending message to case 38569764: mensaje de prueba desde local
+[2025-11-27 09:08:24] [INFO] scraping.messaging: Opening text messages page: https://the-mendoza-law-firm.mycase.com/court_cases/38569764/text_messages
+[2025-11-27 09:08:38] [INFO] scraping.messaging: Typed message: mensaje de prueba desde local
+[2025-11-27 09:08:38] [INFO] scraping.messaging: Message sent successfully to case 38569764
+[2025-11-27 09:08:44] [DEBUG] core.context_manager: Browser context closed
+[2025-11-27 09:08:44] [DEBUG] core.context_manager: Playwright instance stopped
+[2025-11-27 09:08:44] [INFO] api.endpoints.messages: Message sent successfully in 28.68s
+[2025-11-27 09:22:05] [INFO] api.app: Shutting down MyCase Scraper API
+[2025-11-27 12:34:39] [INFO] api.app: Starting MyCase Scraper API
+[2025-11-27 12:34:39] [INFO] api.app: Download directory: C:\MyCaseDownloads
+[2025-11-27 12:34:39] [INFO] api.app: Playwright profile: C:\ChromeProfiles\mycase_pw
+[2025-11-27 12:34:39] [INFO] api.app: Headless mode: True
+[2025-11-27 12:34:39] [INFO] api.app: ============================================================
+[2025-11-27 12:34:39] [INFO] api.app: Profile Sync Configuration:
+[2025-11-27 12:34:39] [INFO] api.app:   GCS Bucket: mycase-sessions-ortega-473114
+[2025-11-27 12:34:39] [INFO] api.app:   GCS Prefix: playwright-profiles/mycase/
+[2025-11-27 12:34:39] [INFO] api.app:   Local Profile Dir: C:\ChromeProfiles\mycase_pw
+[2025-11-27 12:34:39] [INFO] api.app: ============================================================
+[2025-11-27 12:34:39] [INFO] api.app: Attempting to sync Playwright profile from GCS...
+[2025-11-27 12:34:39] [DEBUG] core.profile_sync: Profile already exists locally
+[2025-11-27 12:34:39] [INFO] api.app: ✅ Playwright profile synced from GCS successfully
+[2025-11-27 12:34:39] [INFO] api.app: Profile contains 695 files/directories
+[2025-11-27 12:34:39] [INFO] api.app:   Cookies file exists: True
+[2025-11-27 12:34:39] [INFO] api.app:   Local Storage exists: True
+[2025-11-27 12:35:35] [INFO] core.context_manager: Launching Playwright persistent context | logic_headless=True | channel=chrome
+[2025-11-27 12:35:36] [INFO] core.context_manager: Persistent context created at C:\ChromeProfiles\mycase_pw
+[2025-11-27 12:35:36] [INFO] core.context_manager: Opening MyCase Dashboard...
+[2025-11-27 12:35:37] [INFO] core.context_manager: No active session detected, attempting login...
+[2025-11-27 12:35:37] [INFO] core.context_manager: Filling credentials...
+[2025-11-27 12:35:42] [INFO] core.context_manager: Login successful (Dashboard text detected)
+[2025-11-27 12:35:42] [INFO] api.endpoints.messages: Sending message to case 38569764: mensaje de prueba desde local
+[2025-11-27 12:35:42] [INFO] scraping.messaging: Opening text messages page: https://the-mendoza-law-firm.mycase.com/court_cases/38569764/text_messages
+[2025-11-27 12:35:57] [INFO] scraping.messaging: Typed message: mensaje de prueba desde local
+[2025-11-27 12:35:57] [INFO] scraping.messaging: Message sent successfully to case 38569764
+[2025-11-27 12:36:00] [DEBUG] core.context_manager: Browser context closed
+[2025-11-27 12:36:00] [DEBUG] core.context_manager: Playwright instance stopped
+[2025-11-27 12:36:00] [INFO] api.endpoints.messages: Message sent successfully in 26.52s
+[2025-11-27 12:39:57] [INFO] core.context_manager: Launching Playwright persistent context | logic_headless=True | channel=chrome
+[2025-11-27 12:39:59] [INFO] core.context_manager: Persistent context created at C:\ChromeProfiles\mycase_pw
+[2025-11-27 12:39:59] [INFO] core.context_manager: Opening MyCase Dashboard...
+[2025-11-27 12:40:01] [INFO] core.context_manager: No active session detected, attempting login...
+[2025-11-27 12:40:01] [INFO] core.context_manager: Filling credentials...
+[2025-11-27 12:40:06] [INFO] core.context_manager: Login successful (Dashboard text detected)
+[2025-11-27 12:40:06] [INFO] api.endpoints.messages: Sending message to case 38569764: 3
+[2025-11-27 12:40:06] [INFO] scraping.messaging: Opening text messages page: https://the-mendoza-law-firm.mycase.com/court_cases/38569764/text_messages
+[2025-11-27 12:40:22] [INFO] scraping.messaging: Typed message: 3
+[2025-11-27 12:40:22] [INFO] scraping.messaging: Message sent successfully to case 38569764
+[2025-11-27 12:40:28] [DEBUG] core.context_manager: Browser context closed
+[2025-11-27 12:40:28] [DEBUG] core.context_manager: Playwright instance stopped
+[2025-11-27 12:40:28] [INFO] api.endpoints.messages: Message sent successfully in 32.93s
+[2025-11-27 13:20:46] [INFO] api.app: Shutting down MyCase Scraper API
