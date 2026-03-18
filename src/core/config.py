@@ -23,14 +23,24 @@ BASE_LEADS_URL = f"{MYCASE_BASE_URL}/leads"
 # ============================================
 # LOCAL FILE STORAGE
 # ============================================
-DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", r"C:\MyCaseDownloads"))
+DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "./downloads"))
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# ============================================
+# SESSION STATE (cookie-based auth)
+# ============================================
+# Base64-encoded state.json content (for Docker/Cloud Run)
+PW_STATE_B64 = os.getenv("PW_STATE_B64", "").strip()
+# Local path to state.json file
+STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
+# GCS remote path for state.json
+STATE_REMOTE = os.getenv("STATE_REMOTE", "sessions/state.json")
 
 # ============================================
 # PLAYWRIGHT SETTINGS
 # ============================================
 # Directory for persistent browser profile (cookies, local storage)
-PW_USER_DATA_DIR = Path(os.getenv("PW_USER_DATA_DIR", r"C:\ChromeProfiles\mycase_pw"))
+PW_USER_DATA_DIR = Path(os.getenv("PW_USER_DATA_DIR", "./chrome_profile"))
 PW_USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Headless mode (True = no visible browser window)

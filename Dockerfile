@@ -27,4 +27,9 @@ ENV PW_HEADLESS=true
 
 EXPOSE 8080
 
-CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080"]
+# PW_STATE_B64: pasa el contenido de state.json codificado en base64.
+# Genera el valor con: python -m src.scripts.exportar_estado
+# Luego: docker run -e PW_STATE_B64="<valor>" ...
+# O agrégalo a docker-compose.yml bajo environment:
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]

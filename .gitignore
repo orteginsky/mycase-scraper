@@ -1,14 +1,69 @@
-__pycache__
-.env
-.vscode
-.DS_Store
+# ─── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# ─── Virtual environments ─────────────────────────────
+.venv/
 venv/
-scraping.egg-info
+env/
+ENV/
+
+# ─── Environment & secrets ────────────────────────────
+.env
+.env.*
+!.env.example
+*.env
+
+# ─── Session state (contiene cookies de sesión activa) ─
+state.json
+.env.state
+*.json.tmp
+pw_state_*.json
+
+# ─── Google credentials ───────────────────────────────
+sa_key.json
+*credentials*.json
+service_account*.json
+
+# ─── Playwright ───────────────────────────────────────
+chrome_profile/
+playwright-profiles/
+profile.tar.gz
+login_failure_debug.png
+
+# ─── Downloads (archivos scrapeados) ──────────────────
+downloads/
+
+# ─── Logs ─────────────────────────────────────────────
+logs/
+*.log
+
+# ─── IDEs ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+NUL
+
+# ─── Archivos legacy (proyecto anterior) ──────────────
 credenciales.txt
 intento_playwright.txt
 prompts.txt
 urls_casos.txt
+scraping.egg-info/
+
+# ─── Miscelánea ───────────────────────────────────────
 *.csv
-sa_key.json
-profile.tar.gz
-NUL
+*.bat
+deploy.txt

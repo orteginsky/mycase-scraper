@@ -16,6 +16,7 @@ LOGIN_URL = "https://auth.mycase.com/login_sessions/new?response_type=code&clien
 
 BASE_CASE_URL = "https://the-mendoza-law-firm.mycase.com/court_cases"
 BASE_LEADS_URL = "https://the-mendoza-law-firm.mycase.com/leads"
+GCS_BUCKET_NAME = "mycase-scraper"
 
 DOWNLOAD_DIR = r"C:\MyCaseDownloads"
 
@@ -44,7 +45,7 @@ PW_BLOCK_RESOURCES = os.getenv(
 ).split(",")
 
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")  # ruta a .json
-SA_JSON = os.getenv("SA_JSON")  # opcional, contenido JSON inline
+SA_JSON = os.getenv("SA_JSON","/home/ortega/mycase-scraper/sa_key.json")  # opcional, contenido JSON inline
 
 # Spreadsheet/hoja por defecto (para pruebas)
 SHEET_DEFAULT_ID = os.getenv("SHEET_DEFAULT_ID", "1Dyq4QJgwKcW3LEAetga43CkAdvzBZDtW7vLddPugVfo")

@@ -1,4 +1,4 @@
-# app.py (o api/router.py)
+# src.app.py (o api/router.py)
 import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
