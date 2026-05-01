@@ -1,14 +1,14 @@
 # src/clients/vertex_client.py
 from vertexai.preview.generative_models import GenerativeModel, Part
 from src.auth import init_vertex_ai
-from src.settings import settings
+from src.core import config as settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 def generate_text(prompt: str) -> str:
     init_vertex_ai()
-    model_id = settings.vertex_model_id
+    model_id = settings.VERTEX_MODEL_ID
     logger.info(f"🤖 Solicitando respuesta a modelo {model_id}...")
     try:
         model = GenerativeModel(model_id)
@@ -25,7 +25,7 @@ def generate_text_with_files(prompt: str, gcs_uris: list[str]) -> str:
     Envía 'prompt' + uno o más PDFs (gs://...) como partes al modelo.
     """
     init_vertex_ai()
-    model_id = settings.vertex_model_id
+    model_id = settings.VERTEX_MODEL_ID
     logger.info(f"🤖 Modelo {model_id} con {len(gcs_uris)} archivo(s) adjunto(s)...")
     try:
         model = GenerativeModel(model_id)

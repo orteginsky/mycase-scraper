@@ -1,0 +1,62 @@
+# .dockerignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Secrets and Local Config
+.env
+.env.*
+sa_key.json
+*credentials*.json
+service_account*.json
+
+# Session Data
+state.json
+.env.state
+.playwright_data/
+pw_state_*.json
+profile.tar.gz
+
+# Logs and Debug
+logs/
+*.log
+login_failure_debug.png
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.dockerignore
+cloudbuild.yaml
+README.md

@@ -6,9 +6,9 @@ Provides shared resources and validates configuration.
 from pathlib import Path
 from fastapi import Depends, HTTPException, status
 
-from core import config
-from core.context_manager import mycase_session
-from utils.logger import get_logger
+from src.core import config
+from src.core import mycase_session, check_session_active, mycase_auto_session
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -160,4 +160,46 @@ class ConfigValidator:
             "google": google,
             "cloud_run": cloud_run,
             "all_valid": scraping["valid"] and google["valid"] and cloud_run["valid"],
+        }
+
+
+def validate_mycase_session() -> dict:
+    """
+    Perform a live check of the MyCase session.
+    Prioritizes state-based (cookies) session if available.
+    """
+    from src.core.context_manager import mycase_session_state, load_state_path
+    
+    # Check if we have a state (cookies) available
+    state_path = load_state_path()
+    
+    try:
+        logger.info("Performing consolidated session validation...")
+        with mycase_auto_session() as page:
+            is_active = check_session_active(page)
+            
+            user_info = None
+            if is_active:
+                try:
+                    user_el = page.query_selector(".user-name, .profile-name, #user-menu")
+                    if user_el:
+                        user_info = user_el.inner_text().strip()
+                except:
+                    pass
+            
+            return {
+                "session_active": is_active,
+                "method": "state_cookies" if load_state_path() else "persistent_profile",
+                "current_url": page.url,
+                "user_info": user_info,
+                "error": None if is_active else "Session invalid or expired"
+            }
+    except Exception as e:
+        logger.error("Session validation failed: %s", e)
+        return {
+            "session_active": False,
+            "method": "state_cookies" if load_state_path() else "persistent_profile",
+            "current_url": None,
+            "user_info": None,
+            "error": str(e)
         }

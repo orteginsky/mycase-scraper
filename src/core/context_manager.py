@@ -9,26 +9,21 @@ Supports two authentication modes:
                                            scripts/crear_sesion.py.
 
 Integration with scraping:
-    from core.context_manager import mycase_session, mycase_session_state
-    from scraping import download_pdfs, extract_case_notes, send_text_message
-
-    # With persistent profile:
-    with mycase_session() as page:
-        result = download_pdfs(page, case_id, "case", "Client Name")
+    from src.core.context_manager import mycase_session, mycase_session_state
+    from src.scraping import download_pdfs, extract_case_notes, send_text_message
 
     # With cookie state (recommended for Cloud Run):
     with mycase_session_state() as page:
         notes  = extract_case_notes(page, entity_id)
-        result = download_pdfs(page, entity_id, "lead", "Client Name")
-        msg    = send_text_message(page, case_id, "Hello!")
 """
 import base64
 import json
 import tempfile
+import threading
 from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Generator, Optional, Tuple
 
-from playwright.sync_api import sync_playwright, Page, BrowserContext, Playwright
+from playwright.sync_api import sync_playwright, Page, BrowserContext, Playwright, Browser
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 from src.core import config
@@ -36,6 +31,9 @@ from src.core.exceptions import AuthenticationError, SessionExpiredError
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Limits to 3 simultaneous browsers per container instance to save RAM on Cloud Run
+browser_semaphore = threading.Semaphore(3)
 
 # URL tokens that indicate the session is on a login page (not authenticated)
 _LOGIN_TOKENS = ("login", "sign_in", "sign-in", "auth.mycase.com")
@@ -48,13 +46,9 @@ _LOGIN_TOKENS = ("login", "sign_in", "sign-in", "auth.mycase.com")
 def load_state_path() -> Optional[str]:
     """
     Resolve Playwright session-state path.
-
     Priority:
         1. PW_STATE_B64 env var (base64-encoded state.json) → decoded to a temp file.
         2. STATE_FILE config path (local state.json file).
-
-    Returns:
-        Absolute path to a state JSON file, or None if neither source is available.
     """
     raw = config.PW_STATE_B64
     if raw:
@@ -79,13 +73,9 @@ def load_state_path() -> Optional[str]:
 
 
 def check_session_active(page: Page) -> bool:
-    """
-    Return True if *page* is on an active (authenticated) MyCase page.
-
-    Waits for network idle so redirects have time to complete.
-    """
+    """Return True if *page* is on an active (authenticated) MyCase page."""
     try:
-        page.wait_for_load_state("networkidle", timeout=15_000)
+        page.wait_for_load_state("networkidle", timeout=10_000)
     except Exception:
         pass
     url = page.url
@@ -97,9 +87,11 @@ def check_session_active(page: Page) -> bool:
 # ---------------------------------------------------------------------------
 
 def _build_browser_args(headless: bool) -> list[str]:
+    """Optimized browser arguments for Cloud Run (low memory)."""
     args = [
         "--no-sandbox",
-        "--disable-dev-shm-usage",
+        "--disable-dev-shm-usage",  # Crucial for Cloud Run
+        "--single-process",        # Reduces RAM consumption
         "--disable-gpu",
         "--disable-extensions",
         "--disable-blink-features=AutomationControlled",
@@ -126,35 +118,24 @@ def _apply_resource_blocking(page: Page) -> None:
 
 
 def _create_persistent_context(headless: bool = True):
-    """
-    Launch a persistent Playwright context backed by user_data_dir.
-    Keeps cookies/local-storage across runs.
-
-    Returns:
-        (playwright, context, page)
-    """
+    """Launch a persistent Playwright context."""
     p = sync_playwright().start()
     try:
         launch_kwargs = {
             "user_data_dir": str(config.PW_USER_DATA_DIR),
-            "headless": False,  # we control headless via --headless=new arg
+            "headless": False,  # controlled via args
             "args": _build_browser_args(headless),
             "viewport": {"width": 1920, "height": 1080},
         }
         if config.PW_BROWSER_CHANNEL:
             launch_kwargs["channel"] = config.PW_BROWSER_CHANNEL
 
-        logger.info(
-            "Launching persistent context | headless=%s | channel=%s",
-            headless,
-            launch_kwargs.get("channel", "chromium"),
-        )
+        logger.info("Launching persistent context | headless=%s", headless)
         context = p.chromium.launch_persistent_context(**launch_kwargs)
         page = context.pages[0]
         page.set_default_timeout(config.PW_TIMEOUT_MS)
         _apply_resource_blocking(page)
         return p, context, page
-
     except Exception:
         logger.exception("Error creating persistent context")
         try:
@@ -164,31 +145,18 @@ def _create_persistent_context(headless: bool = True):
         raise
 
 
-def _create_state_context(state_path: str):
-    """
-    Launch an ephemeral Playwright context pre-loaded with stored cookies/state.
-    Used by mycase_session_state() and validation scripts.
-
-    Args:
-        state_path: Path to a Playwright storage_state JSON file.
-
-    Returns:
-        (playwright, browser, context, page)
-    """
+def _create_state_context(state_path: str) -> Tuple[Playwright, Browser, BrowserContext, Page]:
+    """Launch an ephemeral context with storage state."""
     p = sync_playwright().start()
     try:
         launch_kwargs: dict = {
-            "headless": False,  # headless controlled via args
+            "headless": False,  # controlled via args
             "args": _build_browser_args(config.PW_HEADLESS),
         }
         if config.PW_BROWSER_CHANNEL:
             launch_kwargs["channel"] = config.PW_BROWSER_CHANNEL
 
-        logger.info(
-            "Launching state context | headless=%s | state=%s",
-            config.PW_HEADLESS,
-            state_path,
-        )
+        logger.info("Launching state context | state=%s", state_path)
         browser = p.chromium.launch(**launch_kwargs)
         context = browser.new_context(
             storage_state=state_path,
@@ -198,7 +166,6 @@ def _create_state_context(state_path: str):
         page.set_default_timeout(config.PW_TIMEOUT_MS)
         _apply_resource_blocking(page)
         return p, browser, context, page
-
     except Exception:
         logger.exception("Error creating state context")
         try:
@@ -209,35 +176,56 @@ def _create_state_context(state_path: str):
 
 
 # ---------------------------------------------------------------------------
-# Login helpers (persistent-profile mode)
+# Public context managers
 # ---------------------------------------------------------------------------
 
+@contextmanager
+def mycase_session(auto_login: bool = True) -> Generator[Page, None, None]:
+    """Sync context manager for persistent browser session."""
+    p = context = page = None
+    with browser_semaphore:
+        try:
+            p, context, page = _create_persistent_context(headless=config.PW_HEADLESS)
+            if auto_login:
+                _ensure_logged_in(page)
+            yield page
+        finally:
+            if context: context.close()
+            if p: p.stop()
+
+
+@contextmanager
+def mycase_session_state() -> Generator[Page, None, None]:
+    """Sync context manager for state-based (cookie) browser session."""
+    state_path = load_state_path()
+    if not state_path:
+        raise AuthenticationError("No session state found (PW_STATE_B64 or state.json)")
+
+    p = browser = context = page = None
+    with browser_semaphore:
+        try:
+            p, browser, context, page = _create_state_context(state_path)
+            
+            # Verify session
+            page.goto(config.MYCASE_BASE_URL, wait_until="domcontentloaded", timeout=30_000)
+            if not check_session_active(page):
+                raise SessionExpiredError("Session state is expired or invalid.")
+
+            yield page
+        finally:
+            if context: context.close()
+            if browser: browser.close()
+            if p: p.stop()
+
+
 def _ensure_logged_in(page: Page) -> None:
-    """
-    Navigate to the MyCase dashboard and log in if needed.
-    Only used for persistent-profile sessions where credentials are available.
-
-    Raises:
-        AuthenticationError: If login cannot be completed.
-    """
+    """Manual login logic for persistent-profile mode."""
     try:
-        logger.info("Navigating to MyCase dashboard...")
         page.goto(config.DASHBOARD_URL, wait_until="domcontentloaded", timeout=60_000)
-
-        def _is_logged_in() -> bool:
-            try:
-                if page.is_visible("text=Home") and page.is_visible("text=Cases"):
-                    return True
-                if page.is_visible("text=My hours billed"):
-                    return True
-                if page.is_visible("nav"):
-                    return True
-                return False
-            except Exception:
-                return False
-
-        if _is_logged_in():
-            logger.info("Active session detected via dashboard text")
+        
+        # Check if already logged in (navbar visible)
+        if page.is_visible("nav") or page.is_visible("text=Home"):
+            logger.info("Active session detected")
             return
 
         logger.info("No active session — attempting login...")
@@ -246,170 +234,55 @@ def _ensure_logged_in(page: Page) -> None:
 
         page.fill("#login_session_email", config.MYCASE_EMAIL)
         page.fill("#login_session_password", config.MYCASE_PASSWORD)
-
+        
         with page.expect_navigation(timeout=30_000):
             page.click("#login-form-submit")
-
-        try:
-            page.wait_for_selector("text=Home", timeout=20_000)
-            logger.info("Login successful")
-        except PlaywrightTimeout:
-            if _is_logged_in():
-                logger.info("Login successful (fallback check)")
-            else:
-                raise PlaywrightTimeout("Dashboard text not found after login")
-
-    except PlaywrightTimeout:
-        logger.error("Dashboard not detected after login attempt")
-        try:
-            page.screenshot(path="login_failure_debug.png")
-            logger.info("Screenshot saved | URL: %s", page.url)
-        except Exception:
-            pass
-        raise AuthenticationError(
-            "Failed to reach dashboard after login. Check credentials or network."
-        )
-    except AuthenticationError:
-        raise
+        
+        if not check_session_active(page):
+            raise AuthenticationError("Login failed - dashboard not reached.")
+            
+        logger.info("Login successful")
     except Exception as e:
-        logger.exception("Unexpected error during login: %s", e)
+        logger.error("Login process failed: %s", e)
         raise AuthenticationError(f"Login failed: {e}")
 
 
-# ---------------------------------------------------------------------------
-# Public context managers
-# ---------------------------------------------------------------------------
 
 @contextmanager
-def mycase_session(auto_login: bool = True) -> Generator[Page, None, None]:
-    """
-    Context manager — persistent-profile browser session.
-
-    Uses Chrome user_data_dir to preserve cookies across runs.
-    Suitable for local development.
-
-    Args:
-        auto_login: Navigate to dashboard and log in if the session has expired.
-
-    Yields:
-        Page: Playwright page ready for scraping.
-
-    Example::
-
-        with mycase_session() as page:
-            result = download_pdfs(page, case_id, "case", "Client Name")
-    """
-    p = context = page = None
-    try:
-        p, context, page = _create_persistent_context(headless=config.PW_HEADLESS)
-        if auto_login:
-            _ensure_logged_in(page)
-        yield page
-    finally:
-        try:
-            if context:
-                context.close()
-        except Exception as e:
-            logger.warning("Error closing context: %s", e)
-        try:
-            if p:
-                p.stop()
-        except Exception as e:
-            logger.warning("Error stopping Playwright: %s", e)
-
-
-@contextmanager
-def mycase_session_state() -> Generator[Page, None, None]:
-    """
-    Context manager — cookie/state-based browser session.
-
-    Loads session from (in priority order):
-        1. ``PW_STATE_B64`` environment variable (base64 state.json)
-        2. ``STATE_FILE`` path from config (default: ``state.json``)
-
-    Generates the state file by running::
-
-        python -m src.scripts.crear_sesion
-
-    Yields:
-        Page: Playwright page ready for scraping.
-
-    Raises:
-        AuthenticationError: No session state found.
-        SessionExpiredError: State exists but session is expired.
-
-    Example::
-
-        with mycase_session_state() as page:
-            notes  = extract_case_notes(page, entity_id)
-            result = download_pdfs(page, entity_id, "lead", "Client Name")
-            msg    = send_text_message(page, case_id, "Hello!")
-    """
-    state_path = load_state_path()
-    if not state_path:
-        raise AuthenticationError(
-            "No session state found. "
-            "Run `python -m src.scripts.crear_sesion` first, "
-            "or set the PW_STATE_B64 environment variable."
-        )
-
-    p = browser = context = page = None
-    try:
-        p, browser, context, page = _create_state_context(state_path)
-
-        logger.info("Verifying session at %s ...", config.MYCASE_BASE_URL)
-        page.goto(config.MYCASE_BASE_URL, wait_until="domcontentloaded", timeout=60_000)
-
-        if not check_session_active(page):
-            raise SessionExpiredError(
-                "Session state is expired or invalid. "
-                "Run `python -m src.scripts.crear_sesion` to renew it."
-            )
-
-        logger.info("State-based session is active | URL: %s", page.url)
-        yield page
-
-    finally:
-        try:
-            if context:
-                context.close()
-        except Exception as e:
-            logger.warning("Error closing context: %s", e)
-        try:
-            if browser:
-                browser.close()
-        except Exception as e:
-            logger.warning("Error closing browser: %s", e)
-        try:
-            if p:
-                p.stop()
-        except Exception as e:
-            logger.warning("Error stopping Playwright: %s", e)
-
-
-@contextmanager
-def mycase_session_full() -> Generator[tuple[Playwright, BrowserContext, Page], None, None]:
+def mycase_session_full(auto_login: bool = True) -> Generator[Tuple[Playwright, BrowserContext, Page], None, None]:
     """
     Context manager — yields full Playwright objects (persistent-profile mode).
-
     Use when you need direct access to the context or playwright instance.
-
-    Yields:
-        tuple: (Playwright instance, BrowserContext, Page)
     """
     p = context = page = None
-    try:
-        p, context, page = _create_persistent_context(headless=config.PW_HEADLESS)
-        _ensure_logged_in(page)
-        yield p, context, page
-    finally:
+    with browser_semaphore:
         try:
+            p, context, page = _create_persistent_context(headless=config.PW_HEADLESS)
+            if auto_login:
+                _ensure_logged_in(page)
+            yield p, context, page
+        finally:
             if context:
-                context.close()
-        except Exception as e:
-            logger.warning("Error closing context: %s", e)
-        try:
+                try: context.close()
+                except: pass
             if p:
-                p.stop()
-        except Exception as e:
-            logger.warning("Error stopping Playwright: %s", e)
+                try: p.stop()
+                except: pass
+
+
+@contextmanager
+def mycase_auto_session() -> Generator[Page, None, None]:
+    """
+    Unified context manager that automatically chooses the best session:
+    1. If PW_STATE_B64 or state.json exists, uses state-based session.
+    2. Otherwise, uses persistent profile session with auto-login.
+    """
+    state_path = load_state_path()
+    if state_path:
+        logger.info("Using state-based (cookies) session for this task.")
+        with mycase_session_state() as page:
+            yield page
+    else:
+        logger.info("Using persistent profile (folder) session for this task.")
+        with mycase_session() as page:
+            yield page

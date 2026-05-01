@@ -15,7 +15,7 @@ from google.auth.transport.requests import Request
 
 import vertexai
 
-from src.settings import settings
+from src.core import config as settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -51,8 +51,8 @@ def _adc_credentials(scopes: Tuple[str, ...]) -> BaseCredentials:
 @lru_cache(maxsize=4)
 def get_workspace_credentials(scopes: Optional[Iterable[str]] = WORKSPACE_SCOPES) -> BaseCredentials:
     scopes_t = _scopes_tuple(scopes)
-    if settings.google_application_credentials:
-        return _from_service_account_file(settings.google_application_credentials, scopes_t)
+    if settings.GOOGLE_APPLICATION_CREDENTIALS:
+        return _from_service_account_file(settings.GOOGLE_APPLICATION_CREDENTIALS, scopes_t)
     return _adc_credentials(scopes_t)
 
 # --- CLIENTES GOOGLE API ---
@@ -100,8 +100,8 @@ def init_vertex_ai() -> bool:
     - Cloud Run (ADC)
     - Local con SA JSON
     """
-    project = settings.gcp_project_id
-    location = settings.gcp_location
+    project = settings.GCP_PROJECT_ID
+    location = settings.GCP_LOCATION
     logger.info(f"🤖 Inicializando Vertex AI (proyecto={project}, región={location})...")
 
     try:

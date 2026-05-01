@@ -9,6 +9,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# # ============================================
+# PROJECT PATHS & ENVIRONMENT
+# ============================================
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+IS_PROD = os.getenv("K_SERVICE") is not None  # K_SERVICE is standard in Cloud Run
+
+def get_env_path(name: str, default: str) -> Path:
+    """Gets a path from env, but ignores prod-specific paths if running locally."""
+    val = os.getenv(name)
+    if val and not IS_PROD and (val.startswith("/app") or val.startswith("/tmp")):
+        # If we are local but the env says /app or /tmp, it's likely a config leak from prod.
+        # We override it with the local default.
+        return Path(default)
+    return Path(val or default)
+
 # ============================================
 # MYCASE AUTHENTICATION
 # ============================================
@@ -23,7 +38,9 @@ BASE_LEADS_URL = f"{MYCASE_BASE_URL}/leads"
 # ============================================
 # LOCAL FILE STORAGE
 # ============================================
-DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "./downloads"))
+# In Cloud Run, /tmp is the only writable directory
+DEFAULT_DOWNLOAD_DIR = "/tmp/downloads" if IS_PROD else str(BASE_DIR / "downloads")
+DOWNLOAD_DIR = get_env_path("DOWNLOAD_DIR", DEFAULT_DOWNLOAD_DIR)
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # ============================================
@@ -32,7 +49,7 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # Base64-encoded state.json content (for Docker/Cloud Run)
 PW_STATE_B64 = os.getenv("PW_STATE_B64", "").strip()
 # Local path to state.json file
-STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
+STATE_FILE = Path(os.getenv("STATE_FILE", str(BASE_DIR / "state.json")))
 # GCS remote path for state.json
 STATE_REMOTE = os.getenv("STATE_REMOTE", "sessions/state.json")
 
@@ -40,14 +57,15 @@ STATE_REMOTE = os.getenv("STATE_REMOTE", "sessions/state.json")
 # PLAYWRIGHT SETTINGS
 # ============================================
 # Directory for persistent browser profile (cookies, local storage)
-PW_USER_DATA_DIR = Path(os.getenv("PW_USER_DATA_DIR", "./chrome_profile"))
+DEFAULT_PW_DIR = "/tmp/playwright_data" if IS_PROD else str(BASE_DIR / ".playwright_data")
+PW_USER_DATA_DIR = get_env_path("PW_USER_DATA_DIR", DEFAULT_PW_DIR)
 PW_USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Headless mode (True = no visible browser window)
 PW_HEADLESS = os.getenv("PW_HEADLESS", "true").lower() == "true"
 
-# Global timeout in milliseconds
-PW_TIMEOUT_MS = int(os.getenv("PW_TIMEOUT_MS", "8000"))
+# Global timeout in milliseconds (30s is safer for Cloud Run)
+PW_TIMEOUT_MS = int(os.getenv("PW_TIMEOUT_MS", "30000"))
 
 # Resource types to block for better performance
 PW_BLOCK_RESOURCES = os.getenv(
@@ -58,6 +76,13 @@ PW_BLOCK_RESOURCES = os.getenv(
 # Browser channel to use (empty = default chromium, "chrome" = Google Chrome)
 # For Cloud Run, leave empty to use installed chromium
 PW_BROWSER_CHANNEL = os.getenv("PW_BROWSER_CHANNEL", "").strip()
+
+# ============================================
+# GCP SETTINGS
+# ============================================
+GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "")
+GCP_LOCATION = os.getenv("GCP_LOCATION", "us-central1")
+VERTEX_MODEL_ID = os.getenv("VERTEX_MODEL_ID", "gemini-1.5-pro")
 
 # ============================================
 # GOOGLE CLOUD CREDENTIALS
@@ -98,8 +123,12 @@ PW_PROFILE_GCS_PREFIX = os.getenv("PW_PROFILE_GCS_PREFIX", "playwright-profiles/
 # LOGGING
 # ============================================
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FILE = Path(os.getenv("LOG_FILE", "./logs/scraping.log"))
-LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+DEFAULT_LOG_FILE = "/tmp/scraping.log" if IS_PROD else str(BASE_DIR / "logs" / "scraping.log")
+LOG_FILE = get_env_path("LOG_FILE", DEFAULT_LOG_FILE)
+
+# Create log directory if not using /tmp
+if not IS_PROD:
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # ============================================
 # API SETTINGS
@@ -107,3 +136,11 @@ LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8001"))
 API_RELOAD = os.getenv("API_RELOAD", "false").lower() == "true"
+
+if __name__ == "__main__":
+    if IS_PROD:
+        print("Entorno: PRODUCCIÓN (Cloud Run)")
+    else:
+        print(f"Entorno: LOCAL (Base: {BASE_DIR})")
+    print(f"PW_USER_DATA_DIR: {PW_USER_DATA_DIR}")
+    print(f"DOWNLOAD_DIR: {DOWNLOAD_DIR}")

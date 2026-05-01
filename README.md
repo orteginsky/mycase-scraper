@@ -101,9 +101,9 @@ This opens a browser to manually log into MyCase and save session cookies.
 ### 4. Run the API
 
 ```bash
-python -m api.app
+python -m src.main
 # Or:
-uvicorn api.app:app --host 0.0.0.0 --port 8080 --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
 ### 5. Test Endpoints
@@ -181,7 +181,7 @@ ENV PW_USER_DATA_DIR=/app/playwright_profile
 ENV DOWNLOAD_DIR=/app/downloads
 ENV PW_HEADLESS=true
 
-CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
 ```
 
 ### Session Persistence

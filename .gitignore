@@ -24,6 +24,7 @@ ENV/
 # ─── Session state (contiene cookies de sesión activa) ─
 state.json
 .env.state
+.playwright_data/
 *.json.tmp
 pw_state_*.json
 

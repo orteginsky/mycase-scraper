@@ -1,122 +1,87 @@
 # scraping/notes.py
 """
 Notes extraction functionality for MyCase.
-Extracts case notes and metadata from court cases and leads.
+Extracted and parsed according to specific UI requirements.
 """
-from typing import Dict, List, Optional, Any, Literal
+from typing import List, Dict, Any, Optional
 from playwright.sync_api import Page
-from datetime import datetime
-
-from core import config
-from core.exceptions import CaseNotFoundError, ScrapingError
-from utils.logger import get_logger
+from src.core import config as settings
+from src.utils.logger import get_logger
+from src.parsers.mycase_notes_parser import parse_notes_html
 
 logger = get_logger(__name__)
-
 
 def extract_case_notes(
     page: Page,
     entity_id: int,
-    entity_type: Literal["lead", "case"] = "case",
+    entity_type: str = "case",
+    type: str = None,
 ) -> Dict[str, Any]:
     """
-    Extract notes and metadata from a MyCase case or lead.
+    Navega a la URL de notas (lead o case), expande el contenido truncado y extrae la información.
 
     Args:
         page: Playwright page object (must be logged in)
         entity_id: The ID of the lead or court case
-        entity_type: Either "lead" or "case"
+        entity_type: "case" o "lead"
+        type: Informational parameter to be passed through
 
     Returns:
-        Dict with:
-            - entity_id: int
-            - entity_type: str
-            - case_name: str
-            - date_opened: str (if available)
-            - case_type: str (if available)
-            - notes: List[Dict] with note content
-            - extracted_at: str (ISO timestamp)
-
-    Raises:
-        CaseNotFoundError: If entity doesn't exist
-        ScrapingError: If extraction fails
+        Dict: Dictionary containing 'notes' (list) and 'type' (str).
     """
     if entity_type == "lead":
-        base_url = config.BASE_LEADS_URL
-        notes_url = f"{base_url}/{entity_id}/notes"
+        base_url = settings.BASE_LEADS_URL
     else:
-        base_url = config.BASE_CASE_URL
-        notes_url = f"{base_url}/{entity_id}/notes"
+        base_url = settings.BASE_CASE_URL
 
-    logger.info("Extracting notes from: %s", notes_url)
+    notes_url = f"{base_url}/{entity_id}/notes"
+    logger.info("Navegando a la URL de notas: %s", notes_url)
 
+    # 1. Navegar a la URL de notas
     response = page.goto(notes_url, wait_until="domcontentloaded")
-
+    
     if not response or response.status == 404:
-        raise CaseNotFoundError(entity_id, f"{entity_type.capitalize()} {entity_id} not found (404)")
+        logger.error("No se pudo cargar la página de notas para el caso %s (404)", entity_id)
+        return []
 
-    result = {
-        "entity_id": entity_id,
-        "entity_type": entity_type,
-        "case_name": None,
-        "date_opened": None,
-        "case_type": None,
-        "notes": [],
-        "extracted_at": datetime.utcnow().isoformat() + "Z",
+    # Esperar a que la tabla de notas sea visible
+    try:
+        page.wait_for_selector("tr.notes_item", timeout=10000)
+    except Exception:
+        logger.warning("No se encontraron elementos 'tr.notes_item' en la página.")
+        # Podría ser que no haya notas, retornamos lista vacía
+        return []
+
+    # 2. Identificar y hacer clic en todos los botones "Read more" (button.expand-notes)
+    try:
+        expand_buttons = page.query_selector_all("button.expand-notes")
+        if expand_buttons:
+            logger.info("Expandiendo %d notas truncadas...", len(expand_buttons))
+            for btn in expand_buttons:
+                if btn.is_visible():
+                    try:
+                        btn.click()
+                        # Un pequeño delay para permitir que el contenido se expanda si es asíncrono
+                        # aunque lo ideal es esperar a un cambio en el DOM si es necesario.
+                        # page.wait_for_timeout(100) 
+                    except Exception as e:
+                        logger.debug("No se pudo hacer clic en un botón de expansión: %s", e)
+        
+        # Opcional: esperar un momento corto para asegurar que todas las expansiones terminaron
+        page.wait_for_timeout(500)
+        
+    except Exception as e:
+        logger.warning("Ocurrió un error al intentar expandir las notas: %s", e)
+
+    # 3. Retornar la lista de notas procesada usando el parser
+    html_content = page.content()
+    notes = parse_notes_html(html_content)
+    
+    logger.info("Se extrajeron %d notas para el caso %s", len(notes), entity_id)
+    return {
+        "notes": notes,
+        "type": type
     }
-
-    # Extract case metadata
-    try:
-        # Case name from header
-        name_selector = "h1.case-name, .case-header h1, .lead-name"
-        if page.query_selector(name_selector):
-            result["case_name"] = page.text_content(name_selector).strip()
-            logger.debug("Found case name: %s", result["case_name"])
-
-        # Date opened (if visible)
-        date_selector = ".case-opened-date, .date-opened"
-        if page.query_selector(date_selector):
-            result["date_opened"] = page.text_content(date_selector).strip()
-
-        # Case type
-        type_selector = ".case-type, .matter-type"
-        if page.query_selector(type_selector):
-            result["case_type"] = page.text_content(type_selector).strip()
-
-    except Exception as e:
-        logger.warning("Could not extract all metadata: %s", e)
-
-    # Extract notes
-    try:
-        # Wait for notes to load
-        page.wait_for_selector(".notes-list, .note-item, #notes-container", timeout=10000)
-
-        # Extract each note
-        notes = page.eval_on_selector_all(
-            ".note-item, .note-entry, [data-note-id]",
-            """
-            els => els.map(el => {
-                const content = el.querySelector('.note-content, .note-body, .note-text');
-                const author = el.querySelector('.note-author, .author-name');
-                const date = el.querySelector('.note-date, .note-timestamp, time');
-                return {
-                    content: content ? content.textContent.trim() : '',
-                    author: author ? author.textContent.trim() : '',
-                    date: date ? (date.getAttribute('datetime') || date.textContent.trim()) : '',
-                };
-            })
-            """
-        )
-
-        result["notes"] = [n for n in notes if n.get("content")]
-        logger.info("Extracted %d notes", len(result["notes"]))
-
-    except Exception as e:
-        logger.warning("Could not extract notes: %s", e)
-        # Return what we have even if notes extraction fails
-        result["notes"] = []
-
-    return result
 
 
 def extract_case_details(
@@ -134,7 +99,7 @@ def extract_case_details(
     Returns:
         Dict with case metadata fields (may contain None values)
     """
-    url = f"{config.BASE_CASE_URL}/{case_id}/notes"
+    url = f"{settings.BASE_CASE_URL}/{case_id}/notes"
     logger.info("Extracting case details from: %s", url)
 
     try:
@@ -149,35 +114,43 @@ def extract_case_details(
                 "TypeOfCase": None,
             }
 
-        # Extract fields with fallbacks
+        # Extract fields with improved selectors
         name = None
+        case_id_val = str(case_id)
         date_opened = None
         type_of_case = None
 
         try:
-            name_el = page.query_selector("h1.case-name, .case-header h1")
+            name_el = page.query_selector("#case-name-header, h1.case-name, .case-header h1")
             if name_el:
-                name = name_el.text_content().strip()
+                name = name_el.inner_text().strip()
         except Exception:
             pass
 
         try:
-            date_el = page.query_selector(".case-opened-date, .date-opened")
-            if date_el:
-                date_opened = date_el.text_content().strip()
+            id_el = page.query_selector("#court-case-number-header")
+            if id_el:
+                case_id_val = id_el.inner_text().split("//")[0].strip()
         except Exception:
             pass
 
         try:
-            type_el = page.query_selector(".case-type, .matter-type")
-            if type_el:
-                type_of_case = type_el.text_content().strip()
+            date_el = page.locator("xpath=//span[contains(text(), 'Date opened:')]/..")
+            if date_el.count() > 0:
+                date_opened = date_el.first.inner_text().replace("Date opened:", "").strip()
+        except Exception:
+            pass
+
+        try:
+            type_el = page.locator("xpath=//span[contains(text(), 'Practice area:')]/..")
+            if type_el.count() > 0:
+                type_of_case = type_el.first.inner_text().replace("Practice area:", "").strip()
         except Exception:
             pass
 
         return {
             "Name": name,
-            "ID": str(case_id),
+            "ID": case_id_val,
             "DateOpened": date_opened,
             "TypeOfCase": type_of_case,
         }

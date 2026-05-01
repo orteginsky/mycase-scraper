@@ -29,12 +29,6 @@ class StorageDestinationMixin(BaseModel):
     drive_folder_id: Optional[str] = Field(
         None, description="Google Drive folder ID for uploads (uses default if not provided)"
     )
-    gcs_bucket: Optional[str] = Field(
-        None, description="GCS bucket name for uploads"
-    )
-    gcs_prefix: Optional[str] = Field(
-        None, description="GCS path prefix (e.g., 'cases/2024/')"
-    )
 
 
 # ============================================
@@ -43,8 +37,8 @@ class StorageDestinationMixin(BaseModel):
 class DownloadPDFRequest(SheetTrackingMixin, StorageDestinationMixin):
     """Request model for downloading PDFs from MyCase."""
     case_id: int = Field(..., description="ID of the lead or court case in MyCase")
-    client_name: str = Field(
-        ..., min_length=1, description="Client name (used for subfolder naming)"
+    client_name: Optional[str] = Field(
+        None, description="Client name (used for subfolder naming)"
     )
     kind: Literal["lead", "case"] = Field(
         "lead", description="Entity type: 'lead' or 'case'"
@@ -98,8 +92,8 @@ class DownloadPDFResponse(BaseModel):
 class ExtractNotesRequest(SheetTrackingMixin, StorageDestinationMixin):
     """Request model for extracting notes from MyCase."""
     case_id: int = Field(..., description="ID of the lead or court case in MyCase")
-    client_name: str = Field(
-        ..., min_length=1, description="Client name (for reference)"
+    client_name: Optional[str] = Field(
+        None, description="Client name (for reference)"
     )
     kind: Literal["lead", "case"] = Field(
         "case", description="Entity type: 'lead' or 'case'"
@@ -113,11 +107,16 @@ class ExtractNotesRequest(SheetTrackingMixin, StorageDestinationMixin):
     gdoc_id: Optional[str] = Field(
         None, description="Existing Google Doc ID to append notes to"
     )
+    type: Optional[str] = Field(
+        None, description="Informational parameter to be passed through"
+    )
 
 
 class NoteItem(BaseModel):
     """A single note entry from MyCase."""
-    content: str
+    id: Optional[str] = None
+    subject: Optional[str] = None
+    body: str
     author: Optional[str] = None
     date: Optional[str] = None
 
@@ -126,8 +125,9 @@ class ExtractNotesResponse(BaseModel):
     """Response model for notes extraction operation."""
     ok: bool = Field(..., description="Whether the operation succeeded")
     case_id: int
-    client_name: str
+    client_name: Optional[str] = None
     kind: Literal["lead", "case"]
+    type: Optional[str] = None
 
     # Timing
     started_at: float
@@ -199,6 +199,30 @@ class SendMessageResponse(BaseModel):
 
 
 # ============================================
+# CASE NAME ENDPOINT
+# ============================================
+class CaseNameRequest(SheetTrackingMixin):
+    """Request model for extracting a case name from MyCase."""
+    case_id: int = Field(..., description="The unique numeric ID of the court case in MyCase")
+
+
+class CaseNameResponse(BaseModel):
+    """Response model for case name extraction operation."""
+    ok: bool = Field(..., description="Whether the operation succeeded")
+    case_id: int
+    case_name: Optional[str] = None
+    url: Optional[str] = None
+    extracted_at: Optional[str] = None
+    
+    # Timing
+    started_at: float
+    finished_at: float
+    
+    # Error (if any)
+    error: Optional[str] = None
+
+
+# ============================================
 # HEALTH CHECK
 # ============================================
 class HealthCheckResponse(BaseModel):
@@ -208,6 +232,9 @@ class HealthCheckResponse(BaseModel):
     version: str = "1.0.0"
     playwright_profile_exists: bool = False
     google_credentials_configured: bool = False
+    session_active: Optional[bool] = None
+    session_error: Optional[str] = None
+    user_info: Optional[str] = None
 
 
 # ============================================

@@ -15,11 +15,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from core import config
+from src.core import config
 
 # GCS upload is optional — skip gracefully if client is unavailable
 try:
-    from clients.gcs_client import GCSClient  # type: ignore
+    from src.clients.gcs_client import GCSClient  # type: ignore
     _GCS_AVAILABLE = True
 except ImportError:
     _GCS_AVAILABLE = False

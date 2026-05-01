@@ -3,8 +3,8 @@
 Core module: configuration, credentials, exceptions, and context managers.
 
 Quick-start:
-    from core.context_manager import mycase_session, mycase_session_state
-    from scraping import download_pdfs, extract_case_notes, send_text_message
+    from src.core.context_manager import mycase_session, mycase_session_state
+    from src.scraping import download_pdfs, extract_case_notes, send_text_message
 
     # Cookie/state-based session (recommended for Cloud Run):
     with mycase_session_state() as page:
@@ -20,6 +20,7 @@ from src.core.context_manager import (
     mycase_session,
     mycase_session_state,
     mycase_session_full,
+    mycase_auto_session,
     load_state_path,
     check_session_active,
 )

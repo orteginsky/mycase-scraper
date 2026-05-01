@@ -5,12 +5,12 @@ Endpoint for sending text messages through MyCase.
 import time
 from fastapi import APIRouter, HTTPException
 
-from api.schemas import SendMessageRequest, SendMessageResponse
-from api.status_writer import TaskStatusTracker
-from core.context_manager import mycase_session
-from core.exceptions import CaseNotFoundError, MessageSendError, AuthenticationError
-from scraping.messaging import send_text_message, verify_message_sent
-from utils.logger import get_logger
+from src.api.schemas import SendMessageRequest, SendMessageResponse
+from src.api.status_writer import TaskStatusTracker
+from src.core import mycase_auto_session
+from src.core.exceptions import CaseNotFoundError, MessageSendError, AuthenticationError
+from src.scraping.messages import send_text_message, verify_message_sent
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -58,7 +58,7 @@ def send_message_endpoint(req: SendMessageRequest) -> SendMessageResponse:
 
     try:
         # Send message using context manager
-        with mycase_session() as page:
+        with mycase_auto_session() as page:
             logger.info(
                 "Sending message to case %d: %s",
                 req.case_id,

@@ -9,7 +9,7 @@ from typing import Optional, Iterable, Dict, List, Tuple
 
 from google.cloud import storage
 from google.oauth2 import service_account
-from src.config import settings
+from src.core import config as settings
 
 class GCSClient:
     def __init__(self):

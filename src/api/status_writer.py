@@ -6,10 +6,9 @@ Handles status updates, result URLs, and error details.
 from typing import Optional, Any, List
 from datetime import datetime
 
-from clients.sheets_client import write_single_cell, get_sheets_service
-from utils.a1 import col_to_a1
-from core import config
-from utils.logger import get_logger
+from src.clients.sheets_client import write_single_cell, get_sheets_service, col_to_a1
+from src.core import config
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

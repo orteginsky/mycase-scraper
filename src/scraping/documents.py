@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Literal, List, Dict, Optional
 from playwright.sync_api import Page
 
-from core import config
-from core.exceptions import CaseNotFoundError, DocumentDownloadError
-from utils.logger import get_logger
-from utils.text_utils import sanitize_folder_name
+from src.core import config as settings
+from src.core.exceptions import CaseNotFoundError, DocumentDownloadError
+from src.utils.logger import get_logger
+from src.utils.text_utils import sanitize_folder_name
 
 logger = get_logger(__name__)
 
@@ -18,8 +18,8 @@ logger = get_logger(__name__)
 def _get_base_url(entity_type: Literal["lead", "case"]) -> str:
     """Get the base URL for the entity type."""
     if entity_type == "lead":
-        return str(config.BASE_LEADS_URL)
-    return str(config.BASE_CASE_URL)
+        return str(settings.BASE_LEADS_URL)
+    return str(settings.BASE_CASE_URL)
 
 
 def _navigate_to_documents(page: Page, entity_id: int, entity_type: Literal["lead", "case"]) -> None:
@@ -103,7 +103,7 @@ def _download_single_document(page: Page, doc_info: Dict[str, str], target_dir: 
     doc_url = doc_info["href"]
 
     if doc_url.startswith("/"):
-        doc_url = f"{config.MYCASE_BASE_URL}{doc_url}"
+        doc_url = f"{settings.MYCASE_BASE_URL}{doc_url}"
 
     logger.info("Opening document: %s", file_name)
     doc_page = page.context.new_page()
@@ -162,7 +162,7 @@ def download_pdfs(
     if not safe_subfolder:
         safe_subfolder = f"{entity_type}_{entity_id}"
 
-    target_dir = config.DOWNLOAD_DIR / safe_subfolder
+    target_dir = settings.DOWNLOAD_DIR / safe_subfolder
     target_dir.mkdir(parents=True, exist_ok=True)
 
     # Navigate to documents section

@@ -9,8 +9,8 @@ import mimetypes
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from core.credentials import get_drive_credentials
-from core import config
+from src.core.credentials import get_drive_credentials
+from src.core import config
 
 
 def get_drive_service():

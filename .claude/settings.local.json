@@ -1,22 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)",
-      "Bash(nul)",
-      "Bash(gcloud run deploy:*)",
-      "Bash(gcloud run services logs read:*)",
-      "Bash(curl:*)",
-      "Bash(python scripts/deploy_to_cloud.py:*)",
-      "Bash(python -m pip install:*)",
-      "Bash(python test_local.py:*)",
-      "Bash(test:*)",
-      "Bash(where:*)",
-      "Bash(gcloud run services update:*)",
-      "Bash(gcloud run services describe:*)",
-      "Bash(gcloud storage buckets add-iam-policy-binding:*)",
-      "Bash(gcloud projects describe:*)"
-    ],
-    "deny": [],
-    "ask": []
+      "Bash(python:*)",
+      "Bash(python3 -m src.scripts.seed_playwright_state:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(python3:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
   }
 }

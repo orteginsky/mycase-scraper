@@ -8,7 +8,7 @@ from typing import List
 from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
 
-from core import config
+from src.core import config
 
 
 def get_google_credentials(scopes: List[str]) -> Credentials:

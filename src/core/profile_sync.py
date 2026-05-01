@@ -14,8 +14,8 @@ import shutil
 from pathlib import Path
 from typing import Iterable, Optional
 
-from core import config
-from utils.logger import get_logger
+from src.core import config
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -68,7 +68,7 @@ def _get_gcs_client():
     """Get Google Cloud Storage client, with or without explicit credentials."""
     try:
         from google.cloud import storage
-        from core.credentials import get_gcs_credentials
+        from src.core.credentials import get_gcs_credentials
 
         creds = None
         try:

@@ -11,11 +11,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from core import config
-from core.context_manager import _create_state_context, check_session_active
+from src.core import config
+from src.core.context_manager import _create_state_context, check_session_active
 
 try:
-    from clients.gcs_client import GCSClient  # type: ignore
+    from src.clients.gcs_client import GCSClient  # type: ignore
     _GCS_AVAILABLE = True
 except ImportError:
     _GCS_AVAILABLE = False

@@ -5,15 +5,15 @@ Endpoint for downloading PDFs from MyCase.
 import time
 from fastapi import APIRouter, HTTPException
 
-from api.schemas import DownloadPDFRequest, DownloadPDFResponse, DriveFileInfo
-from api.status_writer import TaskStatusTracker
-from core.context_manager import mycase_session
-from core import config
-from core.exceptions import CaseNotFoundError, DocumentDownloadError, AuthenticationError
-from scraping.documents import download_pdfs
-from clients.drive_client import upload_directory
-from utils.text_utils import sanitize_folder_name
-from utils.logger import get_logger
+from src.api.schemas import DownloadPDFRequest, DownloadPDFResponse, DriveFileInfo
+from src.api.status_writer import TaskStatusTracker
+from src.core import mycase_auto_session
+from src.core import config
+from src.core.exceptions import CaseNotFoundError, DocumentDownloadError, AuthenticationError
+from src.scraping.documents import download_pdfs
+from src.clients.drive_client import upload_directory
+from src.utils.text_utils import sanitize_folder_name
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -61,8 +61,8 @@ def download_pdfs_endpoint(req: DownloadPDFRequest) -> DownloadPDFResponse:
 
     try:
         # Use context manager for safe session handling
-        with mycase_session() as page:
-            logger.info("Downloading %s PDFs for case %d (%s)", req.kind, req.case_id, req.client_name)
+        with mycase_auto_session() as page:
+            logger.info("Downloading %s PDFs for case %d (%s)", req.kind, req.case_id, req.client_name or "N/A")
 
             # Download PDFs
             result = download_pdfs(

@@ -1,0 +1,39 @@
+steps:
+  # 1. Construir la imagen de Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/mycase-scraper', '.']
+
+  # 2. Subir la imagen al registro
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/mycase-scraper']
+
+  # 3. Desplegar en Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mycase-scraper'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/mycase-scraper'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--allow-unauthenticated'  # Esto permite que cualquier usuario acceda a la URL
+      # Configuramos variables de entorno críticas. 
+      # PW_STATE_B64 debe configurarse manualmente o vía Secret Manager para mayor seguridad.
+      - '--set-env-vars'
+      - 'PW_HEADLESS=true,API_PORT=8080,GCP_PROJECT_ID=$PROJECT_ID,PW_TIMEOUT_MS=30000'
+
+images:
+  - 'gcr.io/$PROJECT_ID/mycase-scraper'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

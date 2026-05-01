@@ -7,13 +7,13 @@ import json
 from typing import List
 from fastapi import APIRouter, HTTPException
 
-from api.schemas import ExtractNotesRequest, ExtractNotesResponse, NoteItem
-from api.status_writer import TaskStatusTracker
-from core.context_manager import mycase_session
-from core import config
-from core.exceptions import CaseNotFoundError, ScrapingError, AuthenticationError
-from scraping.notes import extract_case_notes
-from utils.logger import get_logger
+from src.api.schemas import ExtractNotesRequest, ExtractNotesResponse, NoteItem
+from src.api.status_writer import TaskStatusTracker
+from src.core import mycase_auto_session
+from src.core import config
+from src.core.exceptions import CaseNotFoundError, ScrapingError, AuthenticationError
+from src.scraping.notes import extract_case_notes
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -30,12 +30,16 @@ def _format_notes_as_text(notes: List[dict], case_name: str = None) -> str:
 
     for i, note in enumerate(notes, 1):
         lines.append(f"Note #{i}")
+        if note.get("id"):
+            lines.append(f"ID: {note['id']}")
+        if note.get("subject"):
+            lines.append(f"Subject: {note['subject']}")
         if note.get("author"):
             lines.append(f"Author: {note['author']}")
         if note.get("date"):
             lines.append(f"Date: {note['date']}")
         lines.append("-" * 30)
-        lines.append(note.get("content", ""))
+        lines.append(note.get("body", ""))
         lines.append("")
 
     return "\n".join(lines)
@@ -50,15 +54,21 @@ def _format_notes_as_markdown(notes: List[dict], case_name: str = None) -> str:
 
     for i, note in enumerate(notes, 1):
         lines.append(f"## Note #{i}")
+        if note.get("id"):
+            lines.append(f"*   **ID:** `{note['id']}`")
+        if note.get("subject"):
+            lines.append(f"*   **Subject:** {note['subject']}")
+        
         metadata = []
         if note.get("author"):
             metadata.append(f"**Author:** {note['author']}")
         if note.get("date"):
             metadata.append(f"**Date:** {note['date']}")
         if metadata:
-            lines.append(" | ".join(metadata))
+            lines.append("*   " + " | ".join(metadata))
             lines.append("")
-        lines.append(note.get("content", ""))
+        
+        lines.append(note.get("body", ""))
         lines.append("")
         lines.append("---")
         lines.append("")
@@ -100,6 +110,7 @@ def extract_notes_endpoint(req: ExtractNotesRequest) -> ExtractNotesResponse:
         started_at=started,
         finished_at=started,
         output_format=req.output_format,
+        type=req.type,
     )
 
     # Mark as running
@@ -107,19 +118,22 @@ def extract_notes_endpoint(req: ExtractNotesRequest) -> ExtractNotesResponse:
 
     try:
         # Extract notes using context manager
-        with mycase_session() as page:
-            logger.info("Extracting notes for %s %d (%s)", req.kind, req.case_id, req.client_name)
+        with mycase_auto_session() as page:
+            logger.info("Extracting notes for %s %d (%s)", req.kind, req.case_id, req.client_name or "N/A")
 
             result = extract_case_notes(
                 page=page,
                 entity_id=req.case_id,
                 entity_type=req.kind,
+                type=req.type,
             )
 
-            response.case_name = result.get("case_name")
-            response.date_opened = result.get("date_opened")
-            response.case_type = result.get("case_type")
-            response.notes = [NoteItem(**n) for n in result.get("notes", [])]
+            notes_list = result["notes"]
+            response.type = result.get("type")
+            
+            # En la nueva lógica ya no extraemos metadatos por separado aquí, 
+            # pero podríamos si fuera necesario. Por ahora usamos lo que retorna el parser.
+            response.notes = [NoteItem(**n) for n in notes_list]
             response.notes_count = len(response.notes)
 
         # Format notes based on requested output

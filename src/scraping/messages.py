@@ -8,9 +8,9 @@ from typing import Dict, Any
 from datetime import datetime
 from playwright.sync_api import Page
 
-from core import config
-from core.exceptions import CaseNotFoundError, MessageSendError
-from utils.logger import get_logger
+from src.core import config as settings
+from src.core.exceptions import CaseNotFoundError, MessageSendError
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -41,7 +41,7 @@ def send_text_message(
         CaseNotFoundError: If case doesn't exist
         MessageSendError: If message send fails
     """
-    url = f"{config.BASE_CASE_URL}/{case_id}/text_messages"
+    url = f"{settings.BASE_CASE_URL}/{case_id}/text_messages"
     logger.info("Opening text messages page: %s", url)
 
     response = page.goto(url, wait_until="domcontentloaded")
