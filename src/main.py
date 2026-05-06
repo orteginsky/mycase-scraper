@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.schemas import HealthCheckResponse, ErrorResponse, DownloadPDFRequest
-from src.api.endpoints import pdfs_router, notes_router, messages_router, cases_router
+from src.api.endpoints import pdfs_router, notes_router, messages_router, cases_router, case_stages_router
 from src.api.dependencies import (
     check_playwright_profile, 
     check_google_credentials, 
@@ -57,6 +57,7 @@ app.include_router(pdfs_router)
 app.include_router(notes_router)
 app.include_router(messages_router)
 app.include_router(cases_router)
+app.include_router(case_stages_router)
 
 @app.get("/", tags=["Health"])
 def root():

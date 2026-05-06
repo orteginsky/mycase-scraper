@@ -91,7 +91,8 @@ VERTEX_MODEL_ID = os.getenv("VERTEX_MODEL_ID", "gemini-1.5-pro")
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 
 # Alternative: JSON content inline (for Cloud Run secrets)
-SA_JSON = os.getenv("SA_JSON", "")
+# Also accepts GOOGLE_SERVICE_ACCOUNT for compatibility with MendozaFirm_IA scripts
+SA_JSON = os.getenv("SA_JSON", "") or os.getenv("GOOGLE_SERVICE_ACCOUNT", "")
 
 # ============================================
 # GOOGLE SHEETS
@@ -118,6 +119,18 @@ GCS_SIGNED_URL_TTL = int(os.getenv("GCS_SIGNED_URL_TTL", "604800"))  # 7 days in
 # GCS path for storing Playwright profile (for Cloud Run)
 PW_PROFILE_GCS_BUCKET = os.getenv("PW_PROFILE_GCS_BUCKET", "").strip()
 PW_PROFILE_GCS_PREFIX = os.getenv("PW_PROFILE_GCS_PREFIX", "playwright-profiles/mycase/")
+
+# ============================================
+# CASE STAGE UPDATER (DAILY PWI)
+# ============================================
+CASE_STAGE_SPREADSHEET_ID = os.getenv(
+    "CASE_STAGE_SPREADSHEET_ID",
+    "1skEqWwYFXkhCpm_EIr_ht3mm07m2gvxrMBByqo115_w",
+)
+CASE_STAGE_SHEETS = os.getenv(
+    "CASE_STAGE_SHEETS",
+    "DAILY VAWA,DAILY VISA T,DAILY OTHER VISAS,DAILY NON VAWA",
+).split(",")
 
 # ============================================
 # LOGGING

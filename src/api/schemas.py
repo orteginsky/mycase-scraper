@@ -223,6 +223,41 @@ class CaseNameResponse(BaseModel):
 
 
 # ============================================
+# UPDATE CASE STAGES ENDPOINT
+# ============================================
+class UpdateCaseStagesRequest(BaseModel):
+    """Request model for batch Case Stage update from Google Sheets."""
+    spreadsheet_id: Optional[str] = Field(
+        None, description="Spreadsheet ID (uses CASE_STAGE_SPREADSHEET_ID env var if omitted)"
+    )
+    sheets: Optional[List[str]] = Field(
+        None, description="Sheet names to process (uses CASE_STAGE_SHEETS env var if omitted)"
+    )
+
+
+class SheetUpdateResult(BaseModel):
+    """Per-sheet summary of Case Stage update results."""
+    sheet_name: str
+    ok: int = 0
+    errors: int = 0
+    skipped: int = 0
+
+
+class UpdateCaseStagesResponse(BaseModel):
+    """Response model for batch Case Stage update operation."""
+    ok: bool = Field(..., description="Whether the batch completed without fatal errors")
+    total_ok: int = 0
+    total_errors: int = 0
+    total_skipped: int = 0
+    sheets: List[SheetUpdateResult] = Field(default_factory=list)
+
+    started_at: float
+    finished_at: float
+
+    error: Optional[str] = None
+
+
+# ============================================
 # HEALTH CHECK
 # ============================================
 class HealthCheckResponse(BaseModel):
