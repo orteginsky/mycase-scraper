@@ -37,7 +37,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from src.core.context_manager import mycase_session_full
+from src.core.context_manager import mycase_auto_session
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -158,7 +158,7 @@ def main() -> None:
     ids_no_encontrados: list[str] = []
 
     try:
-        with mycase_session_full() as (p, context, page):
+        with mycase_auto_session() as page:
             for sheet_row, url, original_name_b in pending:
                 case_id = extract_case_id(url)
                 if not case_id:
