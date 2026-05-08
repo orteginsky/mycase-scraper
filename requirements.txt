@@ -24,6 +24,7 @@ google-auth>=2.41
 google-auth-httplib2>=0.2
 google-auth-oauthlib>=1.2
 google-cloud-storage>=2.18
+gspread>=6.0
 httplib2>=0.22
 
 # Optional: Vertex AI (for AI features)
