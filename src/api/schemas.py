@@ -223,6 +223,32 @@ class CaseNameResponse(BaseModel):
 
 
 # ============================================
+# CASE NAMES BATCH ENDPOINT
+# ============================================
+class RunCaseNamesBatchRequest(BaseModel):
+    """Request model for batch case name scraping from Google Sheets."""
+    spreadsheet_id: Optional[str] = Field(
+        None, description="Spreadsheet ID (uses CASE_NAMES_SPREADSHEET_ID env var if omitted)"
+    )
+    sheet_name: Optional[str] = Field(
+        None, description="Sheet/tab name (uses CASE_NAMES_SHEET_NAME env var if omitted)"
+    )
+
+
+class RunCaseNamesBatchResponse(BaseModel):
+    """Response model for batch case name scraping operation."""
+    ok: bool = Field(..., description="Whether the batch completed without fatal errors")
+    total_ok: int = 0
+    total_errors: int = 0
+    total_skipped: int = 0
+
+    started_at: float
+    finished_at: float
+
+    error: Optional[str] = None
+
+
+# ============================================
 # UPDATE CASE STAGES ENDPOINT
 # ============================================
 class UpdateCaseStagesRequest(BaseModel):

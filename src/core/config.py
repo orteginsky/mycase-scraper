@@ -133,6 +133,15 @@ CASE_STAGE_SHEETS = os.getenv(
 ).split(",")
 
 # ============================================
+# CASE NAMES BATCH (MES ACTUAL)
+# ============================================
+CASE_NAMES_SPREADSHEET_ID = os.getenv(
+    "CASE_NAMES_SPREADSHEET_ID",
+    "1HS6QJfEQsKYHP8MBAtu2cpnjc7I-5ph1C5blWqCOuZQ",
+)
+CASE_NAMES_SHEET_NAME = os.getenv("CASE_NAMES_SHEET_NAME", "MES ACTUAL")
+
+# ============================================
 # LOGGING
 # ============================================
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
